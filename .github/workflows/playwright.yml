@@ -1,5 +1,5 @@
 #To run manually: go to your repo → Actions → Playwright Tests → Run workflow → choose your parameters → Run.
-
+#comment: This workflow is designed to run Playwright tests on a Windows environment. It allows you to select the test suite, browser, and run mode (headless or headed) when triggering the workflow manually. The results of the tests, including HTML reports and Allure results, are uploaded as artifacts for later review.
 name: 🎭 Playwright Tests
 
 on:
