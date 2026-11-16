@@ -59,12 +59,13 @@ stages:
       - job: Lint
         displayName: ESLint + typecheck
         pool:
-          vmImage: ubuntu-latest
+          vmImage: ubuntu-24.04
         steps:
-          - task: NodeTool@0
+          - task: UseNode@1
             displayName: Use Node.js 22
             inputs:
-              versionSpec: '22.x'
+              versionSource: spec
+              version: '22.x'
 
           - task: Cache@2
             displayName: Cache npm
@@ -92,12 +93,13 @@ stages:
         displayName: ${{ parameters.testSuite }} (${{ parameters.browser }})
         timeoutInMinutes: 60
         pool:
-          vmImage: ubuntu-latest
+          vmImage: ubuntu-24.04
         steps:
-          - task: NodeTool@0
+          - task: UseNode@1
             displayName: Use Node.js 22
             inputs:
-              versionSpec: '22.x'
+              versionSource: spec
+              version: '22.x'
 
           - task: Cache@2
             displayName: Cache npm
