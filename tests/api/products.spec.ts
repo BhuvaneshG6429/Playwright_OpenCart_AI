@@ -5,6 +5,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface Product {
+    id: number;
+    title: string;
+    price: number;
+    description?: string;
+    category: string;
+    image: string;
+    rating?: unknown;
+}
+
 test.describe('Products API Tests', () => {
 
     // ---------------------------------------------------------
@@ -30,7 +40,7 @@ test.describe('Products API Tests', () => {
         expect(Array.isArray(responseBody)).toBeTruthy();
         expect(responseBody.length).toBeGreaterThan(0);
 
-        responseBody.forEach((product: any) => {
+        responseBody.forEach((product: Product) => {
             expect(product).toHaveProperty('id');
             expect(product).toHaveProperty('title');
             expect(product).toHaveProperty('price');
@@ -73,7 +83,7 @@ test.describe('Products API Tests', () => {
         const responseBody = await response.json();
 
         expect(Array.isArray(responseBody)).toBeTruthy();
-        expect(responseBody.length).toBe(LIMIT);
+        expect(responseBody).toHaveLength(LIMIT);
     });
 
     // ---------------------------------------------------------
@@ -87,7 +97,7 @@ test.describe('Products API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((p: any) => p.id);
+        const ids = responseBody.map((p: Product) => p.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeGreaterThanOrEqual(ids[i - 1]);
@@ -105,7 +115,7 @@ test.describe('Products API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((p: any) => p.id);
+        const ids = responseBody.map((p: Product) => p.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeLessThanOrEqual(ids[i - 1]);
@@ -145,7 +155,7 @@ test.describe('Products API Tests', () => {
         expect(Array.isArray(responseBody)).toBeTruthy();
         expect(responseBody.length).toBeGreaterThan(0);
 
-        responseBody.forEach((product: any) => {
+        responseBody.forEach((product: Product) => {
             expect(product.category).toBe(category);
         });
     });

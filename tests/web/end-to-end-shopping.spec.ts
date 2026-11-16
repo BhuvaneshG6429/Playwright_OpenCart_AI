@@ -91,6 +91,9 @@ test('End-to-End Shopping Flow @master @e2e @web', async ({ homePage, registerPa
 
         const quantity = await cartPage.getProductQuantity();
         expect(quantity).toBe(productQuantity);
+
+        const total = await cartPage.getProductTotalPrice();
+        expect(Helper.convertPriceToNumber(total)).toBe(Helper.convertPriceToNumber(totalPrice));
     });
 
     console.log('✅ End-to-End Shopping completed successfully!');

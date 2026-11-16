@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export async function executeQuery(sql: string, params?: any[]) {
+export async function executeQuery<T = unknown>(
+    sql: string,
+    params: (string | number | boolean | null)[] = []
+): Promise<T> {
     const connection = await mysql.createConnection({
         host: process.env.DB_HOST,
         port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
@@ -14,5 +17,5 @@ export async function executeQuery(sql: string, params?: any[]) {
 
     const [result] = await connection.execute(sql, params);
     await connection.end();
-    return result;
+    return result as T;
 }

@@ -13,6 +13,8 @@
  */
 
 import { test, expect } from '../../fixtures/pageFixtures';
+import type { HomePage } from '../../pages/HomePage';
+import type { LoginPage } from '../../pages/LoginPage';
 import { DataProvider } from '../../utils/DataReader';
 import path from 'path';
 
@@ -25,44 +27,48 @@ interface LoginDataRow {
 
 const loginData: LoginDataRow[] = DataProvider.readJson(path.resolve(__dirname, '../../testdata/opencart_logindata.json'));
 
+async function submitLogin(homePage: HomePage, loginPage: LoginPage, email: string, password: string): Promise<void> {
+    await test.step('1) Open the application and navigate to login', async () => {
+        await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+        await homePage.clickMyAccount();
+        await homePage.clickLogin();
+    });
+
+    await test.step('2) Enter credentials from test data', async () => {
+        await loginPage.setEmail(email);
+        await loginPage.setPassword(password);
+    });
+
+    await test.step('3) Submit the login form', async () => {
+        await loginPage.clickLogin();
+    });
+}
+
 loginData.forEach((data, index) => {
-    test(`Login Data Driven - ${data.testName} [row ${index + 1}] @datadriven @master @web`, async ({ homePage, loginPage, myAccountPage }) => {
+    const email = data.email.trim();
+    const password = data.password.trim();
+    const title = `Login Data Driven - ${data.testName} [row ${index + 1}] @datadriven @master @web`;
 
-        await test.step('1) Open the application and navigate to login', async () => {
-            await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
-            await homePage.clickMyAccount();
-            await homePage.clickLogin();
-        });
+    if (data.expected === 'success') {
+        test(title, async ({ homePage, loginPage, myAccountPage }) => {
+            await submitLogin(homePage, loginPage, email, password);
 
-        await test.step('2) Enter credentials from test data', async () => {
-            const email = data.email.trim();
-            const password = data.password.trim();
-
-            if (email) {
-                await loginPage.setEmail(email);
-            }
-            if (password) {
-                await loginPage.setPassword(password);
-            }
-        });
-
-        await test.step('3) Submit the login form', async () => {
-            await loginPage.clickLogin();
-        });
-
-        await test.step('4) Validate the result', async () => {
-            if (data.expected === 'success') {
+            await test.step('4) Validate successful login', async () => {
                 const isMyAccount = await myAccountPage.isMyAccountPageExists();
-                expect(isMyAccount).toBeTruthy();
-            } else {
+                expect(isMyAccount, 'My Account page should be displayed').toBeTruthy();
+            });
+        });
+    } else {
+        test(title, async ({ homePage, loginPage }) => {
+            await submitLogin(homePage, loginPage, email, password);
+
+            await test.step('4) Validate login failure', async () => {
                 const isWarning = await loginPage.isWarningMessageVisible();
-                expect(isWarning).toBeTruthy();
+                expect(isWarning, 'Warning message should be displayed').toBeTruthy();
 
                 const warningText = await loginPage.getWarningMessage();
                 expect(warningText).toContain('Warning');
-            }
+            });
         });
-
-        console.log(`✅ Login Data Driven - ${data.testName} completed!`);
-    });
+    }
 });

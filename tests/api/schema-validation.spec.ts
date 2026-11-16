@@ -36,13 +36,11 @@ test.describe('JSON Schema Validation Tests', () => {
         const schema = DataProvider.readJson(schemaPath);
 
         const validate = ajv.compile(schema);
-        const isValid = validate(responseBody);
 
-        if (!isValid) {
-            console.log('Product Schema Validation Errors:', JSON.stringify(validate.errors, null, 2));
-        }
-
-        expect(isValid).toBeTruthy();
+        expect(
+            validate(responseBody),
+            `Product schema validation errors: ${JSON.stringify(validate.errors, null, 2)}`
+        ).toBe(true);
     });
 
     // ---------------------------------------------------------
@@ -61,13 +59,11 @@ test.describe('JSON Schema Validation Tests', () => {
         const schema = DataProvider.readJson(schemaPath);
 
         const validate = ajv.compile(schema);
-        const isValid = validate(responseBody);
 
-        if (!isValid) {
-            console.log('User Schema Validation Errors:', JSON.stringify(validate.errors, null, 2));
-        }
-
-        expect(isValid).toBeTruthy();
+        expect(
+            validate(responseBody),
+            `User schema validation errors: ${JSON.stringify(validate.errors, null, 2)}`
+        ).toBe(true);
     });
 
     // ---------------------------------------------------------
@@ -86,12 +82,10 @@ test.describe('JSON Schema Validation Tests', () => {
         const schema = DataProvider.readJson(schemaPath);
 
         const validate = ajv.compile(schema);
-        const isValid = validate(responseBody);
 
-        if (!isValid) {
-            console.log('Cart Schema Validation Errors:', JSON.stringify(validate.errors, null, 2));
-        }
-
-        expect(isValid).toBeTruthy();
+        expect(
+            validate(responseBody),
+            `Cart schema validation errors: ${JSON.stringify(validate.errors, null, 2)}`
+        ).toBe(true);
     });
 });

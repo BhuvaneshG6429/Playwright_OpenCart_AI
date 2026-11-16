@@ -1,12 +1,12 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "Node16",
+        "module": "ESNext",
         "lib": [
             "ES2022",
             "DOM"
         ],
-        "moduleResolution": "node16",
+        "moduleResolution": "Bundler",
         "types": [
             "node"
         ],
@@ -20,7 +20,12 @@
         "ignoreDeprecations": "6.0"
     },
     "include": [
-        "playwright.config.ts"
+        "playwright.config.ts",
+        "api/**/*.ts",
+        "fixtures/**/*.ts",
+        "pages/**/*.ts",
+        "tests/**/*.ts",
+        "utils/**/*.ts"
     ],
     "exclude": [
         "node_modules"

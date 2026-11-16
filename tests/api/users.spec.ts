@@ -5,6 +5,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface User {
+    id: number;
+    email: string;
+    username: string;
+    name: string;
+    address: unknown;
+    phone: string;
+}
+
 test.describe('Users API Tests', () => {
 
     // ---------------------------------------------------------
@@ -64,7 +73,7 @@ test.describe('Users API Tests', () => {
         const responseBody = await response.json();
 
         expect(Array.isArray(responseBody)).toBeTruthy();
-        expect(responseBody.length).toBe(LIMIT);
+        expect(responseBody).toHaveLength(LIMIT);
     });
 
     // ---------------------------------------------------------
@@ -78,7 +87,7 @@ test.describe('Users API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((u: any) => u.id);
+        const ids = responseBody.map((u: User) => u.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeGreaterThanOrEqual(ids[i - 1]);
@@ -96,7 +105,7 @@ test.describe('Users API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((u: any) => u.id);
+        const ids = responseBody.map((u: User) => u.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeLessThanOrEqual(ids[i - 1]);

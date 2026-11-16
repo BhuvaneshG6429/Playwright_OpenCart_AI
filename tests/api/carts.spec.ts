@@ -5,6 +5,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface Cart {
+    id: number;
+    userId: number;
+    products: unknown[];
+}
+
 test.describe('Carts API Tests', () => {
 
     // ---------------------------------------------------------
@@ -86,7 +92,7 @@ test.describe('Carts API Tests', () => {
 
         expect(Array.isArray(responseBody)).toBeTruthy();
 
-        responseBody.forEach((cart: any) => {
+        responseBody.forEach((cart: Cart) => {
             expect(cart.userId).toBe(USER_ID);
         });
     });
@@ -104,7 +110,7 @@ test.describe('Carts API Tests', () => {
         const responseBody = await response.json();
 
         expect(Array.isArray(responseBody)).toBeTruthy();
-        expect(responseBody.length).toBe(LIMIT);
+        expect(responseBody).toHaveLength(LIMIT);
     });
 
     // ---------------------------------------------------------
@@ -118,7 +124,7 @@ test.describe('Carts API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((c: any) => c.id);
+        const ids = responseBody.map((c: Cart) => c.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeGreaterThanOrEqual(ids[i - 1]);
@@ -136,7 +142,7 @@ test.describe('Carts API Tests', () => {
         expect(response.status()).toBe(200);
 
         const responseBody = await response.json();
-        const ids = responseBody.map((c: any) => c.id);
+        const ids = responseBody.map((c: Cart) => c.id);
 
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeLessThanOrEqual(ids[i - 1]);

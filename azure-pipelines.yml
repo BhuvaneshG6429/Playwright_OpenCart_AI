@@ -1,0 +1,218 @@
+# =============================================================================
+# Azure Pipelines — Static analysis + Playwright test execution
+# =============================================================================
+# Stages:
+#   1. StaticAnalysis — ESLint (zero warnings) + TypeScript type check (fast)
+#   2. Tests          — Playwright suite on chromium, reports published as artifacts
+#
+# Notes:
+#   - PR triggers for GitHub repos are configured as a branch policy
+#     (Project Settings > Repositories > Policies > Build validation), not in YAML.
+#   - The @db suite is excluded by default because it needs a local MySQL/OpenCart
+#     instance that hosted agents do not provide.
+# =============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: testSuite
+    displayName: Playwright suite
+    type: string
+    default: test:master
+    values:
+      - test:master
+      - test:sanity
+      - test:regression
+      - test:api
+      - test:web
+      - test:e2e
+      - test:datadriven
+  - name: browser
+    displayName: Browser project
+    type: string
+    default: chromium
+    values:
+      - chromium
+  - name: envSource
+    displayName: Environment source
+    type: string
+    default: example
+    values:
+      - example
+      - variables
+
+variables:
+  CI: 'true'
+  npm_config_cache: $(Pipeline.Workspace)/.npm
+
+stages:
+  - stage: StaticAnalysis
+    displayName: Static analysis
+    jobs:
+      - job: Lint
+        displayName: ESLint + typecheck
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            displayName: Use Node.js 22
+            inputs:
+              versionSpec: '22.x'
+
+          - task: Cache@2
+            displayName: Cache npm
+            inputs:
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(npm_config_cache)
+
+          - script: npm ci
+            displayName: Install dependencies
+
+          - script: npm run lint
+            displayName: Lint (zero warnings allowed)
+
+          - script: npm run typecheck
+            displayName: Type check
+
+  - stage: Tests
+    displayName: Playwright tests
+    dependsOn: StaticAnalysis
+    condition: succeeded()
+    jobs:
+      - job: Playwright
+        displayName: ${{ parameters.testSuite }} (${{ parameters.browser }})
+        timeoutInMinutes: 60
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            displayName: Use Node.js 22
+            inputs:
+              versionSpec: '22.x'
+
+          - task: Cache@2
+            displayName: Cache npm
+            inputs:
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(npm_config_cache)
+
+          - task: Cache@2
+            displayName: Cache Playwright browsers
+            inputs:
+              key: 'playwright | "$(Agent.OS)" | package-lock.json'
+              restoreKeys: |
+                playwright | "$(Agent.OS)"
+              path: $(HOME)/.cache/ms-playwright
+
+          - script: npm ci
+            displayName: Install dependencies
+
+          - script: npx playwright install --with-deps ${{ parameters.browser }}
+            displayName: Install Playwright browsers
+
+          - script: cp .env.example .env
+            displayName: Create .env from .env.example
+            condition: eq('${{ parameters.envSource }}', 'example')
+
+          # Secrets come from pipeline variables or a variable group
+          # (Project Settings > Pipelines > Library). To use a group, uncomment
+          # and name it below, then run the pipeline with envSource = variables.
+          # variables:
+          #   - group: playwright-env
+          - script: |
+              {
+                echo "APP_ENV=${APP_ENV:-qa}"
+                echo "WEB_APP_URL=${WEB_APP_URL}"
+                echo "APP_EMAIL=${APP_EMAIL}"
+                echo "APP_PASSWORD=${APP_PASSWORD}"
+                echo "API_BASE_URL=${API_BASE_URL}"
+                echo "USERNAME=${USERNAME}"
+                echo "PASSWORD=${PASSWORD}"
+                echo "USER_ID=${USER_ID}"
+                echo "PRODUCT_ID=${PRODUCT_ID}"
+                echo "CART_ID=${CART_ID}"
+                echo "LIMIT=${LIMIT}"
+                echo "START_DATE=${START_DATE}"
+                echo "END_DATE=${END_DATE}"
+                echo "DB_HOST=${DB_HOST}"
+                echo "DB_PORT=${DB_PORT}"
+                echo "DB_USER=${DB_USER}"
+                echo "DB_PASSWORD=${DB_PASSWORD}"
+                echo "DB_NAME=${DB_NAME}"
+                echo "ADMIN_URL=${ADMIN_URL}"
+                echo "ADMIN_USERNAME=${ADMIN_USERNAME}"
+                echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
+              } > .env
+            displayName: Create .env from pipeline variables
+            condition: eq('${{ parameters.envSource }}', 'variables')
+            env:
+              APP_ENV: $(APP_ENV)
+              WEB_APP_URL: $(WEB_APP_URL)
+              APP_EMAIL: $(APP_EMAIL)
+              APP_PASSWORD: $(APP_PASSWORD)
+              API_BASE_URL: $(API_BASE_URL)
+              USERNAME: $(USERNAME)
+              PASSWORD: $(PASSWORD)
+              USER_ID: $(USER_ID)
+              PRODUCT_ID: $(PRODUCT_ID)
+              CART_ID: $(CART_ID)
+              LIMIT: $(LIMIT)
+              START_DATE: $(START_DATE)
+              END_DATE: $(END_DATE)
+              DB_HOST: $(DB_HOST)
+              DB_PORT: $(DB_PORT)
+              DB_USER: $(DB_USER)
+              DB_PASSWORD: $(DB_PASSWORD)
+              DB_NAME: $(DB_NAME)
+              ADMIN_URL: $(ADMIN_URL)
+              ADMIN_USERNAME: $(ADMIN_USERNAME)
+              ADMIN_PASSWORD: $(ADMIN_PASSWORD)
+
+          - script: npm run ${{ parameters.testSuite }} -- --project=${{ parameters.browser }} --grep-invert @db
+            displayName: Run Playwright tests
+            env:
+              CI: 'true'
+
+          - task: PublishTestResults@2
+            displayName: Publish JUnit results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: reports/results.xml
+              testRunTitle: 'Playwright ${{ parameters.testSuite }}'
+              failTaskOnMissingResultsFile: false
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish HTML report
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: reports
+              artifact: playwright-html-report
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish custom report
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: custom-report
+              artifact: custom-report
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Allure results
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: allure-results
+              artifact: allure-results
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish traces, screenshots and videos
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: test-results
+              artifact: test-results

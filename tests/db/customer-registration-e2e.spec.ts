@@ -17,6 +17,15 @@ const ADMIN_URL = process.env.ADMIN_URL || 'http://localhost/opencart/upload/adm
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
+interface CustomerRow {
+    customer_id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+    status: number;
+    date_added: string;
+}
+
 test.describe('OpenCart Customer Registration - UI + Admin + DB Validation @master @end-to-end @db', () => {
 
     test('Register customer, verify in admin portal and MySQL @db', async ({
@@ -82,12 +91,12 @@ test.describe('OpenCart Customer Registration - UI + Admin + DB Validation @mast
         });
 
         await test.step('3) Verify the customer in the MySQL oc_customer table', async () => {
-            const rows: any[] = (await executeQuery(
+            const rows = await executeQuery<CustomerRow[]>(
                 'SELECT customer_id, firstname, lastname, email, status, date_added FROM oc_customer WHERE email = ?',
                 [email]
-            )) as any[];
+            );
 
-            expect(rows.length, `Exactly one customer record should exist for email ${email}`).toBe(1);
+            expect(rows, `Exactly one customer record should exist for email ${email}`).toHaveLength(1);
 
             const customer = rows[0];
             expect(customer.firstname, 'DB firstname should match generated first name').toBe(firstName);
