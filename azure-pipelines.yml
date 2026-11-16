@@ -45,8 +45,12 @@ parameters:
       - variables
 
 variables:
-  CI: 'true'
-  npm_config_cache: $(Pipeline.Workspace)/.npm
+  - name: CI
+    value: 'true'
+  - name: npm_config_cache
+    value: $(Pipeline.Workspace)/.npm
+  # Uncomment only after creating a Library variable group named 'playwright-env':
+  # - group: playwright-env
 
 stages:
   - stage: StaticAnalysis
@@ -121,11 +125,9 @@ stages:
             displayName: Create .env from .env.example
             condition: eq('${{ parameters.envSource }}', 'example')
 
-          # Secrets come from pipeline variables or a variable group
-          # (Project Settings > Pipelines > Library). To use a group, uncomment
-          # and name it below, then run the pipeline with envSource = variables.
-          # variables:
-          #   - group: playwright-env
+          # Values come from pipeline variables (pipeline > Variables) or a
+          # variable group referenced in the root variables block.
+          # Run the pipeline with envSource = variables to use them.
           - script: |
               {
                 echo "APP_ENV=${APP_ENV:-qa}"
